@@ -30,7 +30,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 
-public class HardwareMap {
+public class HardwareMap { 
 
     public DcMotor motorStanga = null;
     public DcMotor motorDreapta = null;
