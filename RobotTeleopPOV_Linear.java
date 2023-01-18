@@ -29,44 +29,48 @@
 
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
 
-
-@Autonomous(name="Robot: Auto Drive By Time", group="Robot")
+@TeleOp(name="Robot: Teleop POV", group="Robot")
 @Disabled
-public class RobotAutoDriveByTime_Linear extends LinearOpMode {
+public class RobotTeleopPOV_Linear extends LinearOpMode {
 
-
-    RobotHardware robot = new RobotHardware();
+    HardwareMap robot = new HardwareMap();
     private ElapsedTime runtime = new ElapsedTime();
-
-
-    static final double     FORWARD_SPEED = 0.6;
-    static final double     TURN_SPEED    = 0.5;
 
     @Override
     public void runOpMode() {
 
+        double fataSpate;
+        double stangaDreapta;
+        double stangu;
+        double dreptu;
+
         robot.init(hardwareMap);
 
-        telemetry.addData("Status", "Ready to run");
+        telemetry.addLine("Robot PREGATIT");
         telemetry.update();
 
         waitForStart();
 
-        robot.setMotorPower(0.5);
-        runtime.reset();
-        while(opModeIsActive() && runtime.milliseconds() <5000) {
-            telemetry.addData("se misca", "");
-            telemetry.update();
-        }
-        robot.setMotorPower(0);
-        sleep(1000);
+        while (opModeIsActive()) {
 
+            fataSpate = -gamepad1.left_stick_y;
+            stangaDreapta = gamepad1.left_stick_x;
+
+            stangu = fataSpate - stangaDreapta;
+            dreptu = fataSpate + stangaDreapta;
+
+            robot.motorStanga.setPower(stangu);
+            robot.motorDreapta.setPower(dreptu);
+
+            sleep(50);//incetineste sa nu fie prea rapid
+        }
     }
 }
