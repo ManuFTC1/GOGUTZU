@@ -68,7 +68,7 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
             dreptu = fataSpate + stangaDreapta;
 
             robot.motorStanga.setPower(stangu);
-            robot.motorDreapta.setPower(dreptu);
+            robot.motorDreapta.setPower(dreptu); 
 
             sleep(50);//incetineste sa nu fie prea rapid
         }
