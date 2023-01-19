@@ -35,10 +35,9 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 @TeleOp(name="Robot: Teleop POV", group="Robot")
-@Disabled
 public class RobotTeleopPOV_Linear extends LinearOpMode {
 
-    HardwareMap robot = new HardwareMap();
+    RobotHardware robot = new RobotHardware();
     private ElapsedTime runtime = new ElapsedTime();
 
     double fataSpate;
@@ -60,6 +59,7 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
 
         while (opModeIsActive()) {
 
+            //rotile lui Sergiu
             if(modCondus.equals("normal"))
                 modNormal();
             else
@@ -67,20 +67,23 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
 
             if (gamepad1.left_bumper)
                 modCondus = "manual";
-
             if(gamepad1.right_bumper)
                 modCondus = "normal";
 
+            //bratul lui Manu
+            robot.bratRobot.setPower(gamepad2.left_stick_y);
+
             sleep(50);//incetineste sa nu fie prea rapid
         }
+
     }
 
     public void modNormal() {//cu joysticku din stanga se controleaza ambele roti
         fataSpate = -gamepad1.left_stick_y;
         stangaDreapta = gamepad1.left_stick_x;
 
-        stangu = fataSpate - stangaDreapta;
-        dreptu = fataSpate + stangaDreapta;
+        stangu = fataSpate + stangaDreapta;
+        dreptu = fataSpate - stangaDreapta;
 
         robot.motorStanga.setPower(stangu);
         robot.motorDreapta.setPower(dreptu);
@@ -91,4 +94,3 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
         robot.motorDreapta.setPower(-gamepad1.right_stick_y);
     }
 }
-
