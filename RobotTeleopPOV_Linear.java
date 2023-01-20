@@ -60,7 +60,6 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
         while (opModeIsActive()) {
 
             //rotile lui Sergiu
-            if(!gamepad1.a)// a pune frana
                 if(modCondus.equals("normal"))
                     modNormal();
                 else
@@ -72,7 +71,6 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
                 modCondus = "normal";
 
             //bratul lui Manu
-            robot.bratRobot.setPower(gamepad2.left_stick_y);
 
             //mesaje driver station
             if(gamepad1.dpad_up)
@@ -83,11 +81,9 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
                 telemetry.addLine("What a save!");
             if(gamepad1.dpad_right)
                 telemetry.addLine("Wow!");
-
             telemetry.update();
 
-            if(!gamepad1.b)//b baga turbo
-                sleep(200);//incetineste sa nu fie prea rapid
+                sleep(20);//incetineste sa nu fie prea rapid
         }
         stop();
     }
@@ -101,20 +97,33 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
         viraj = gamepad1.left_stick_x;
 
         if (viraj < 0) {
-            robot.motorStanga.setPower(acceleratie + viraj);
+            robot.motorStanga.setPower(acceleratie - viraj);
             robot.motorDreapta.setPower(acceleratie);
+            telemetry.addData("Viraj stanga: ", viraj);
         }
         else {
-            robot.motorDreapta.setPower(acceleratie - viraj);
+            robot.motorDreapta.setPower(acceleratie + viraj);
             robot.motorStanga.setPower(acceleratie);
+            telemetry.addData("Viraj dreapta: ", viraj);
         }
 
+        telemetry.addData("Acceleratie: ", acceleratie);
         rotirePeLoc(gamepad1.right_stick_x);
     }
 
     public void modManual(){//joysticku stang - roata stanga, joysticku drept - roata dreapta
+        float rotire1;
+        float rotire2;
+        float rotireFinal;
+
+        rotire1 = gamepad1.left_stick_x;
+        rotire2 = gamepad1.right_stick_x;
+        rotireFinal = rotire1 + rotire2;
+
         robot.motorStanga.setPower(-gamepad1.left_stick_y);
         robot.motorDreapta.setPower(-gamepad1.right_stick_y);
+
+        rotirePeLoc(rotireFinal);
     }
 
     public void rotirePeLoc(float viteza) {//se roteste pe loc de pe joysticku din dreapta

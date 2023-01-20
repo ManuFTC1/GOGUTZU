@@ -65,8 +65,8 @@ public class RobotHardware {
         bratRobot.setPower(0);
 
         //Maini Robot
-        manaDreapta = hwMap.get(Servo.class, "manaDreapta");
-        manaStanga = hwMap.get(Servo.class, "manaStanga");
+       // manaDreapta = hwMap.get(Servo.class, "manaDreapta");//1
+       // manaStanga = hwMap.get(Servo.class, "manaStanga");//0
 
     }
     public void setWheelsPower(double allPower) {
