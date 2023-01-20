@@ -44,6 +44,7 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
     double stangaDreapta;
     double stangu;
     double dreptu;
+    double pozitieMaini = 0.74;
 
     @Override
     public void runOpMode() {
@@ -73,24 +74,102 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
             //bratul lui Manu
             robot.bratRobot.setPower(gamepad2.left_stick_y);
 
-            sleep(50);//incetineste sa nu fie prea rapid
+            pozitieMaini += gamepad2.right_trigger * 0.01;
+            pozitieMaini -= gamepad2.left_trigger * 0.01;
+
+            pozitieMaini = Math.max(pozitieMaini, 0.85);
+
+            if(gamepad2.a)
+                pozitieMaini = 0.974;
+            if(gamepad2.b)
+                pozitieMaini = 0.85;
+
+            robot.setServoPosition(pozitieMaini);
+
+            //telemetry
+            chat();
+            telemetry.addData("pozitie dreapta: ", robot.manaDreapta.getPosition());
+            telemetry.addData("pozitie stanga: ", robot.manaStanga.getPosition());
+            telemetry.update();
+
+            sleep(20);//incetineste sa nu fie prea rapid
         }
 
+        robot.manaDreapta.setPosition(0.22);
+        robot.manaStanga.setPosition(0.23);
+
+        stop();
     }
 
-    public void modNormal() {//cu joysticku din stanga se controleaza ambele roti
-        fataSpate = -gamepad1.left_stick_y;
-        stangaDreapta = gamepad1.left_stick_x;
+    public void modNormal() {//rt acceleratie, lt marsalier/frana, joystick stanga directie
 
-        stangu = fataSpate + stangaDreapta;
-        dreptu = fataSpate - stangaDreapta;
+        float acceleratie;
+        float viraj;
 
-        robot.motorStanga.setPower(stangu);
-        robot.motorDreapta.setPower(dreptu);
+        acceleratie = gamepad1.right_trigger - gamepad1.left_trigger;
+        viraj = -gamepad1.left_stick_x;
+
+        if(acceleratie>0) {
+            if (viraj < 0) {
+                robot.motorStanga.setPower(franareStanga(acceleratie, viraj));
+                robot.motorDreapta.setPower(acceleratie);
+                telemetry.addData("Viraj stanga: ", viraj);
+            } else {
+                robot.setWheelsPower(acceleratie);
+            }
+        }
+        if(acceleratie<0)
+            if (viraj < 0) {
+                robot.motorStanga.setPower(franareDreapta(acceleratie, viraj));
+                robot.motorDreapta.setPower(acceleratie);
+                telemetry.addData("Viraj stanga: ", viraj);
+            }
+            else {
+                robot.setWheelsPower(acceleratie);
+            }
+        if(acceleratie == 0)
+            robot.setWheelsPower(0);
+
+        telemetry.addData("Acceleratie: ", acceleratie);
+        //rotirePeLoc(gamepad1.right_stick_x);
     }
 
     public void modManual(){//joysticku stang - roata stanga, joysticku drept - roata dreapta
+        float rotire1;
+        float rotire2;
+        float rotireFinal;
+
+        rotire1 = gamepad1.left_stick_x;
+        rotire2 = gamepad1.right_stick_x;
+        rotireFinal = rotire1 + rotire2;
+
         robot.motorStanga.setPower(-gamepad1.left_stick_y);
         robot.motorDreapta.setPower(-gamepad1.right_stick_y);
+
+        //rotirePeLoc(rotireFinal);
+    }
+
+    public void rotirePeLoc(float viteza) {//se roteste pe loc de pe joysticku din dreapta
+        robot.motorStanga.setPower(-viteza);
+        robot.motorDreapta.setPower(viteza);
+    }
+
+    public void chat() {
+        if(gamepad1.dpad_up)
+            telemetry.addLine("Calculated!");
+        if(gamepad1.dpad_down)
+            telemetry.addLine("Faking.");
+        if(gamepad1.dpad_left)
+            telemetry.addLine("What a save!");
+        if(gamepad1.dpad_right)
+            telemetry.addLine("Wow!");
+    }
+
+    public double franareStanga(float acceleratie, float viraj) {
+        return Math.max(acceleratie * 0.25 - viraj, -0.25); // nu poate fi valoare mai mica de -0.25
+    }
+
+    public double franareDreapta(float acceleratie, float viraj) {
+        return Math.min(acceleratie * 0.25 + viraj, 0.25); // nu poate fi valoare mai mare de 0.25
     }
 }

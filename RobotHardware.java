@@ -37,7 +37,8 @@ public class RobotHardware {
     public DcMotor motorDreapta = null;
 
     public DcMotor bratRobot = null;
-
+    public Servo manaDreapta = null;
+    public Servo manaStanga  = null;
     com.qualcomm.robotcore.hardware.HardwareMap hwMap = null;
 
     public void init(com.qualcomm.robotcore.hardware.HardwareMap ahwMap) {
@@ -53,8 +54,8 @@ public class RobotHardware {
 
         setWheelsPower(0);
 
-        motorDreapta.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         motorStanga.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        motorDreapta.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         //Brat Robot
         bratRobot = hwMap.get(DcMotor.class, "Arm");
@@ -62,10 +63,27 @@ public class RobotHardware {
         bratRobot.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         bratRobot.setPower(0);
 
+        //Maini Robot
+        manaStanga = hwMap.get(Servo.class, "manaStanga");
+        manaDreapta = hwMap.get(Servo.class, "manaDreapta");
+
+        manaStanga.setDirection(Servo.Direction.FORWARD);
+        manaDreapta.setDirection(Servo.Direction.REVERSE);
+
+        manaStanga.setPosition(0.74);
+        manaDreapta.setPosition(0.74);
+
+
 
     }
+
     public void setWheelsPower(double allPower) {
         motorStanga.setPower(allPower);
         motorDreapta.setPower(allPower);
+    }
+
+    public void setServoPosition(double allPosition) {
+        manaStanga.setPosition(allPosition);
+        manaDreapta.setPosition(allPosition);
     }
 }
