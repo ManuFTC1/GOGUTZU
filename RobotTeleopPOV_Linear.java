@@ -40,10 +40,7 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
     RobotHardware robot = new RobotHardware();
     private ElapsedTime runtime = new ElapsedTime();
 
-    double fataSpate;
-    double stangaDreapta;
-    double stangu;
-    double dreptu;
+    double pozitieMaini = 0.74;
 
     @Override
     public void runOpMode() {
@@ -60,10 +57,10 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
         while (opModeIsActive()) {
 
             //rotile lui Sergiu
-                if(modCondus.equals("normal"))
-                    modNormal();
-                else
-                    modManual();
+            if(modCondus.equals("normal"))
+                modNormal();
+            else
+                modManual();
 
             if (gamepad1.left_bumper)
                 modCondus = "manual";
@@ -71,44 +68,33 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
                 modCondus = "normal";
 
             //bratul lui Manu
+            robot.bratRobot.setPower(gamepad2.left_stick_y);
 
-            //mesaje driver station
-            if(gamepad1.dpad_up)
-                telemetry.addLine("Calculated!");
-            if(gamepad1.dpad_down)
-                telemetry.addLine("Faking.");
-            if(gamepad1.dpad_left)
-                telemetry.addLine("What a save!");
-            if(gamepad1.dpad_right)
-                telemetry.addLine("Wow!");
+            pozitieMaini += gamepad2.right_trigger * 0.01;
+            pozitieMaini -= gamepad2.left_trigger * 0.01;
+
+            pozitieMaini = Math.max(pozitieMaini, 0.85);
+
+            if(gamepad2.a)
+                pozitieMaini = 0.974;
+            if(gamepad2.b)
+                pozitieMaini = 0.85;
+
+            robot.setServoPosition(pozitieMaini);
+
+            //telemetry
+            chat();
+            telemetry.addData("pozitie dreapta: ", robot.manaDreapta.getPosition());
+            telemetry.addData("pozitie stanga: ", robot.manaStanga.getPosition());
             telemetry.update();
 
-                sleep(20);//incetineste sa nu fie prea rapid
+            sleep(20);//incetineste sa nu fie prea rapid
         }
+
+        robot.manaDreapta.setPosition(0.22);
+        robot.manaStanga.setPosition(0.23);
+
         stop();
-    }
-
-    public void modNormal() {//rt acceleratie, lt marsalier/frana, joystick stanga directie
-
-        float acceleratie;
-        float viraj;
-
-        acceleratie = gamepad1.right_trigger - gamepad1.left_trigger;
-        viraj = gamepad1.left_stick_x;
-
-        if (viraj < 0) {
-            robot.motorStanga.setPower(acceleratie - viraj);
-            robot.motorDreapta.setPower(acceleratie);
-            telemetry.addData("Viraj stanga: ", viraj);
-        }
-        else {
-            robot.motorDreapta.setPower(acceleratie + viraj);
-            robot.motorStanga.setPower(acceleratie);
-            telemetry.addData("Viraj dreapta: ", viraj);
-        }
-
-        telemetry.addData("Acceleratie: ", acceleratie);
-        rotirePeLoc(gamepad1.right_stick_x);
     }
 
     public void modManual(){//joysticku stang - roata stanga, joysticku drept - roata dreapta
@@ -123,11 +109,84 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
         robot.motorStanga.setPower(-gamepad1.left_stick_y);
         robot.motorDreapta.setPower(-gamepad1.right_stick_y);
 
-        rotirePeLoc(rotireFinal);
+        //rotirePeLoc(rotireFinal);
     }
 
-    public void rotirePeLoc(float viteza) {//se roteste pe loc de pe joysticku din dreapta
+    public void modNormal() {//rt acceleratie, lt marsalier/frana, joystick stanga directie
+
+        float acceleratie;
+        float viraj;
+
+        acceleratie = gamepad1.right_trigger - gamepad1.left_trigger;
+        viraj = gamepad1.left_stick_x;
+
+        if(acceleratie == 0)
+            return;
+
+        if(viraj == 0)
+            robot.setWheelsPower(acceleratie);
+        else {
+            if (viraj > 0) {
+                franareStanga(acceleratie, viraj);
+                robot.motorDreapta.setPower(acceleratie);
+            }
+            if (viraj < 0) {
+                franareDreapta(acceleratie, viraj);
+                robot.motorStanga.setPower(acceleratie);
+            }
+        }
+        telemetry.addData("Acceleratie: ", acceleratie);
+        //rotirePeLoc(gamepad1.right_stick_x);
+    }
+
+    public void franareStanga(float acceleratie, float viraj) {
+        double putereFrana;
+
+        if(acceleratie > 0) {
+            putereFrana = acceleratie - viraj;
+            if(putereFrana < 0.1) {
+                putereFrana = -0.1;
+            }
+        }
+        else {
+            putereFrana = acceleratie + viraj;
+            if(putereFrana >-0.1)
+                putereFrana = 0.1;
+        }
+        robot.motorStanga.setPower(putereFrana);
+    }
+
+    public void franareDreapta(float acceleratie, float viraj) {
+        double putereFrana;
+
+        if(acceleratie > 0) {
+            putereFrana = acceleratie + viraj;
+            if(putereFrana < 0.1) {
+                putereFrana = -0.1;
+            }
+        }
+        else {
+            putereFrana = acceleratie - viraj;
+            if(putereFrana >-0.1)
+                putereFrana = 0.1;
+        }
+        robot.motorDreapta.setPower(putereFrana);
+    }
+
+    public void chat() {
+        if(gamepad1.dpad_up)
+            telemetry.addLine("Calculated!");
+        if(gamepad1.dpad_down)
+            telemetry.addLine("Faking.");
+        if(gamepad1.dpad_left)
+            telemetry.addLine("What a save!");
+        if(gamepad1.dpad_right)
+            telemetry.addLine("Wow!");
+    }
+
+    /*public void rotirePeLoc(float viteza) {//se roteste pe loc de pe joysticku din dreapta
         robot.motorStanga.setPower(-viteza);
         robot.motorDreapta.setPower(viteza);
     }
+     */
 }
