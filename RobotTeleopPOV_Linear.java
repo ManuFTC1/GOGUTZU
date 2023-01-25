@@ -46,6 +46,7 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
     public void runOpMode() {
 
         String modCondus = "normal";
+        String modBrate = "normal";
 
         robot.init(hardwareMap);
 
@@ -68,19 +69,30 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
                 modCondus = "normal";
 
             //bratul lui Manu
-            robot.bratRobot.setPower(gamepad2.left_stick_y);
+            robot.bratRobot.setPower(gamepad2.right_stick_y);
 
-            pozitieMaini += gamepad2.right_trigger * 0.01;
-            pozitieMaini -= gamepad2.left_trigger * 0.01;
+            if(modBrate == "normal") {
+                pozitieMaini += gamepad2.right_trigger * 0.01;
+                pozitieMaini -= gamepad2.left_trigger * 0.01;
 
-            pozitieMaini = Math.max(pozitieMaini, 0.85);
+                pozitieMaini = Math.max(pozitieMaini, 0.75);
 
-            if(gamepad2.a)
-                pozitieMaini = 0.974;
-            if(gamepad2.b)
-                pozitieMaini = 0.85;
+                if (gamepad2.right_bumper)
+                    pozitieMaini = 1.0;
+                if (gamepad2.left_bumper)
+                    pozitieMaini = 0.75;
 
-            robot.setServoPosition(pozitieMaini);
+                robot.setServoPosition(pozitieMaini);
+            }
+            else {
+                robot.setServoPosition(0.25);
+            }
+
+            if(gamepad2.dpad_up)
+                modBrate = "normal";
+
+            if(gamepad2.dpad_down)
+                modBrate = "stop";
 
             //telemetry
             chat();
@@ -91,82 +103,98 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
             sleep(20);//incetineste sa nu fie prea rapid
         }
 
-        robot.manaDreapta.setPosition(0.22);
-        robot.manaStanga.setPosition(0.23);
-
         stop();
     }
 
     public void modManual(){//joysticku stang - roata stanga, joysticku drept - roata dreapta
         float rotire1;
         float rotire2;
-        float rotireFinal;
+        float rotireaAiurea;
+
+        rotireaAiurea = gamepad1.left_stick_x;
+
+        if(rotireaAiurea != 0) {
+            rotirePeLoc(rotireaAiurea);
+            return;
+        }
+
+        float vitezaStanga;
+        float vitezaDrepta;
 
         rotire1 = gamepad1.left_stick_x;
         rotire2 = gamepad1.right_stick_x;
-        rotireFinal = rotire1 + rotire2;
 
-        robot.motorStanga.setPower(-gamepad1.left_stick_y);
-        robot.motorDreapta.setPower(-gamepad1.right_stick_y);
+        vitezaStanga = -gamepad1.left_stick_y;
+        vitezaDrepta = -gamepad1.right_stick_y;
 
-        //rotirePeLoc(rotireFinal);
+        if(gamepad1.right_trigger == 0 ) {
+            robot.motorStanga.setPower(Math.min(vitezaStanga, 0.75));
+            robot.motorDreapta.setPower(Math.min(vitezaDrepta, 0.75));
+        }
     }
 
-    public void modNormal() {//rt acceleratie, lt marsalier/frana, joystick stanga directie
+    public void modNormal() {//rt viteza, lt marsalier/frana, joystick stanga directie
 
-        float acceleratie;
+        float viteza;
         float viraj;
+        float rotireAiurea;
 
-        acceleratie = gamepad1.right_trigger - gamepad1.left_trigger;
+        rotireAiurea = gamepad1.left_stick_x;
+
+        if(rotireAiurea != 0 ) {
+            rotirePeLoc(rotireAiurea);
+            return;
+        }
+        viteza = gamepad1.right_trigger - gamepad1.left_trigger;
         viraj = gamepad1.left_stick_x;
 
-        if(acceleratie == 0)
-            return;
+        if(viteza == 0)
+            robot.setWheelsPower(0);
 
         if(viraj == 0)
-            robot.setWheelsPower(acceleratie);
+            robot.setWheelsPower(viteza);
         else {
-            if (viraj > 0) {
-                franareStanga(acceleratie, viraj);
-                robot.motorDreapta.setPower(acceleratie);
-            }
             if (viraj < 0) {
-                franareDreapta(acceleratie, viraj);
-                robot.motorStanga.setPower(acceleratie);
+                franareDreapta(viteza, viraj);
+                robot.motorDreapta.setPower(viteza);
+            }
+            if (viraj > 0) {
+                franareStanga(viteza, viraj);
+                robot.motorStanga.setPower(viteza);
             }
         }
-        telemetry.addData("Acceleratie: ", acceleratie);
-        //rotirePeLoc(gamepad1.right_stick_x);
+        telemetry.addData("viteza: ", viteza);
+
     }
 
-    public void franareStanga(float acceleratie, float viraj) {
+    public void franareStanga(float viteza, float viraj) {
         double putereFrana;
 
-        if(acceleratie > 0) {
-            putereFrana = acceleratie - viraj;
+        if(viteza > 0) {
+            putereFrana = viteza - viraj;
             if(putereFrana < 0.1) {
                 putereFrana = -0.1;
             }
         }
         else {
-            putereFrana = acceleratie + viraj;
+            putereFrana = viteza + viraj;
             if(putereFrana >-0.1)
                 putereFrana = 0.1;
         }
         robot.motorStanga.setPower(putereFrana);
     }
 
-    public void franareDreapta(float acceleratie, float viraj) {
+    public void franareDreapta(float viteza, float viraj) {
         double putereFrana;
 
-        if(acceleratie > 0) {
-            putereFrana = acceleratie + viraj;
+        if(viteza > 0) {
+            putereFrana = viteza + viraj;
             if(putereFrana < 0.1) {
                 putereFrana = -0.1;
             }
         }
         else {
-            putereFrana = acceleratie - viraj;
+            putereFrana = viteza - viraj;
             if(putereFrana >-0.1)
                 putereFrana = 0.1;
         }
@@ -184,9 +212,8 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
             telemetry.addLine("Wow!");
     }
 
-    /*public void rotirePeLoc(float viteza) {//se roteste pe loc de pe joysticku din dreapta
+    public void rotirePeLoc(float viteza) {//se roteste pe loc de pe joysticku din dreapta
         robot.motorStanga.setPower(-viteza);
         robot.motorDreapta.setPower(viteza);
     }
-     */
 }

@@ -70,8 +70,8 @@ public class RobotHardware {
         manaStanga.setDirection(Servo.Direction.FORWARD);
         manaDreapta.setDirection(Servo.Direction.REVERSE);
 
-        manaStanga.setPosition(0.74);
-        manaDreapta.setPosition(0.74);
+        manaStanga.setPosition(0.25);
+        manaDreapta.setPosition(0.25);
 
 
     }
