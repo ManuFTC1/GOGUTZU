@@ -1,35 +1,5 @@
-/* Copyright (c) 2017 FIRST. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted (subject to the limitations in the disclaimer below) provided that
- * the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this list
- * of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice, this
- * list of conditions and the following disclaimer in the documentation and/or
- * other materials provided with the distribution.
- *
- * Neither the name of FIRST nor the names of its contributors may be used to endorse or
- * promote products derived from this software without specific prior written permission.
- *
- * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
- * LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -38,19 +8,16 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 public class RobotTeleopPOV_Linear extends LinearOpMode {
 
     RobotHardware robot = new RobotHardware();
-    private ElapsedTime runtime = new ElapsedTime();
+    ElapsedTime runtime = new ElapsedTime();
 
-    double fataSpate;
-    double stangaDreapta;
-    double stangu;
-    double dreptu;
-    double pozitieMaini = 0.74;
+    double acceleratieMotorDreapta = 0;
+    double acceleratieMotorStanga = 0;
+    double pozitieMaini = 0.25;
 
     @Override
     public void runOpMode() {
 
         String modCondus = "normal";
-
         robot.init(hardwareMap);
 
         telemetry.addLine("Robot PREGATIT");
@@ -61,115 +28,189 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
         while (opModeIsActive()) {
 
             //rotile lui Sergiu
-            if(modCondus.equals("normal"))
+
+            if (modCondus.equals("normal"))
                 modNormal();
             else
                 modManual();
 
             if (gamepad1.left_bumper)
-                modCondus = "manual";
-            if(gamepad1.right_bumper)
                 modCondus = "normal";
+            if (gamepad1.right_bumper)
+                modCondus = "manual";
+
+            if(gamepad1.a)
+                robot.setWheelsPower(1);
 
             //bratul lui Manu
-            robot.bratRobot.setPower(gamepad2.left_stick_y);
+            robot.bratRobot.setPower(gamepad2.right_stick_y);
 
             pozitieMaini += gamepad2.right_trigger * 0.01;
             pozitieMaini -= gamepad2.left_trigger * 0.01;
 
-            pozitieMaini = Math.max(pozitieMaini, 0.85);
+            pozitieMaini = Math.max(pozitieMaini, 0.25);//sa nu depaseaca valori de 1 sau -1
+            pozitieMaini = Math.min(pozitieMaini, 1);
 
-            if(gamepad2.a)
-                pozitieMaini = 0.974;
-            if(gamepad2.b)
-                pozitieMaini = 0.85;
+            if (gamepad2.right_bumper)
+                pozitieMaini = 1.0;
+            if (gamepad2.left_bumper)
+                pozitieMaini = 0.74;
+            if (gamepad2.a)
+                pozitieMaini = 0.25;
 
             robot.setServoPosition(pozitieMaini);
 
             //telemetry
-            chat();
             telemetry.addData("pozitie dreapta: ", robot.manaDreapta.getPosition());
             telemetry.addData("pozitie stanga: ", robot.manaStanga.getPosition());
             telemetry.update();
 
             sleep(20);//incetineste sa nu fie prea rapid
         }
-
-        robot.manaDreapta.setPosition(0.22);
-        robot.manaStanga.setPosition(0.23);
-
         stop();
     }
 
-    public void modNormal() {//rt acceleratie, lt marsalier/frana, joystick stanga directie
+    public void modManual(){//joysticku stang - roata stanga, joysticku drept - roata dreapta
+        double rotireaAiurea;
 
-        float acceleratie;
-        float viraj;
+        rotireaAiurea = gamepad1.left_stick_x;
 
-        acceleratie = gamepad1.right_trigger - gamepad1.left_trigger;
-        viraj = -gamepad1.left_stick_x;
+        if(rotireaAiurea != 0) {
+            rotirePeLoc(-rotireaAiurea);
+            return;
+        }
 
-        if(acceleratie>0) {
+        double vitezaStanga;
+        double vitezaDrepta;
+
+
+        vitezaStanga = -gamepad1.left_stick_y;
+        vitezaDrepta = -gamepad1.right_stick_y;
+
+        if(vitezaDrepta == 0)
+            acceleratieMotorDreapta = 0;
+
+        if(vitezaStanga == 0)
+            acceleratieMotorStanga = 0;
+
+        putereMotorStanga(vitezaStanga);
+        putereMotorDreapta(vitezaDrepta);
+    }
+
+    public void modNormal() {//rt viteza, lt marsalier/frana, joystick stanga directie
+
+        double viteza;
+        double viraj;
+        double rotireAiurea;
+
+        rotireAiurea = gamepad1.right_stick_x;
+
+        if(rotireAiurea != 0 ) {
+           rotirePeLoc(-rotireAiurea);
+            return;
+        }
+        viteza = gamepad1.right_trigger - gamepad1.left_trigger;
+        viraj = gamepad1.left_stick_x;
+
+        if(viteza == 0) {
+            robot.setWheelsPower(0);
+            acceleratieMotorStanga = 0;
+            acceleratieMotorDreapta = 0;
+        }
+        else
+            if(viraj == 0)
+                putereAmbeleMotoare(viteza);
+            else {
             if (viraj < 0) {
-                robot.motorStanga.setPower(franareStanga(acceleratie, viraj));
-                robot.motorDreapta.setPower(acceleratie);
-                telemetry.addData("Viraj stanga: ", viraj);
-            } else {
-                robot.setWheelsPower(acceleratie);
+                franareDreapta(viteza, viraj);
+                putereMotorDreapta(viteza);
+            }
+            if (viraj > 0) {
+                franareStanga(viteza, viraj);
+                putereMotorStanga(viteza);
             }
         }
-        if(acceleratie<0)
-            if (viraj < 0) {
-                robot.motorStanga.setPower(franareDreapta(acceleratie, viraj));
-                robot.motorDreapta.setPower(acceleratie);
-                telemetry.addData("Viraj stanga: ", viraj);
-            }
-            else {
-                robot.setWheelsPower(acceleratie);
-            }
-        if(acceleratie == 0)
-            robot.setWheelsPower(0);
 
-        telemetry.addData("Acceleratie: ", acceleratie);
-        //rotirePeLoc(gamepad1.right_stick_x);
+
     }
 
-    public void modManual(){//joysticku stang - roata stanga, joysticku drept - roata dreapta
-        float rotire1;
-        float rotire2;
-        float rotireFinal;
+    public void putereMotorStanga(double viteza) {
+        if(viteza * acceleratieMotorStanga < 0){ //daca au semne diferite
+            acceleratieMotorStanga = 0;
+        }
+        else
+            acceleratieMotorStanga += viteza / 10; //acceleratie mai rapid daca nr este mai mic
 
-        rotire1 = gamepad1.left_stick_x;
-        rotire2 = gamepad1.right_stick_x;
-        rotireFinal = rotire1 + rotire2;
+        if(acceleratieMotorStanga > 1) //limiteaza acceleratia intr 1 si -1
+            acceleratieMotorStanga = 1;
 
-        robot.motorStanga.setPower(-gamepad1.left_stick_y);
-        robot.motorDreapta.setPower(-gamepad1.right_stick_y);
+        if(acceleratieMotorStanga < -1)
+            acceleratieMotorStanga = -1;
 
-        //rotirePeLoc(rotireFinal);
+        if(viteza > 0)
+            robot.motorStanga.setPower(Math.min(viteza, acceleratieMotorStanga));
+        else
+            robot.motorStanga.setPower(Math.max(viteza, acceleratieMotorStanga));
+
+        telemetry.addData("Motor stanga viteza: ", viteza);
+        telemetry.addData("Motor stanga acceleratie: ", acceleratieMotorStanga);
     }
 
-    public void rotirePeLoc(float viteza) {//se roteste pe loc de pe joysticku din dreapta
+    public void putereMotorDreapta(double viteza) {
+        if(viteza * acceleratieMotorDreapta < 0){
+            acceleratieMotorStanga = 0;
+        }
+        else
+            acceleratieMotorDreapta += viteza / 10;
+
+        if(acceleratieMotorDreapta > 1)
+            acceleratieMotorDreapta = 1;
+
+        if(acceleratieMotorDreapta < -1)
+            acceleratieMotorDreapta = -1;
+
+        if(viteza > 0)
+            robot.motorDreapta.setPower(Math.min(viteza, acceleratieMotorDreapta));
+        else
+            robot.motorDreapta.setPower(Math.max(viteza, acceleratieMotorDreapta));
+
+        telemetry.addData("Motor stanga viteza: ", viteza);
+        telemetry.addData("Motor stanga acceleratie: ", acceleratieMotorDreapta);
+    }
+
+    public void franareStanga(double viteza, double viraj) {
+        double putereFrana;
+        
+        if(viteza > 0) {
+            putereFrana = viteza - viraj - 0.1;
+        }
+        else {
+            putereFrana = viteza + viraj + 0.1;
+        }
+
+        robot.motorStanga.setPower(putereFrana);
+    }
+
+    public void franareDreapta(double viteza, double viraj) {
+        double putereFrana;
+
+        if(viteza > 0) {
+            putereFrana = viteza + viraj - 0.1;
+        }
+        else {
+            putereFrana = viteza - viraj + 0.1;
+        }
+
+        robot.motorDreapta.setPower(putereFrana);
+    }
+
+    public void rotirePeLoc(double viteza) {//se roteste pe loc
         robot.motorStanga.setPower(-viteza);
         robot.motorDreapta.setPower(viteza);
     }
 
-    public void chat() {
-        if(gamepad1.dpad_up)
-            telemetry.addLine("Calculated!");
-        if(gamepad1.dpad_down)
-            telemetry.addLine("Faking.");
-        if(gamepad1.dpad_left)
-            telemetry.addLine("What a save!");
-        if(gamepad1.dpad_right)
-            telemetry.addLine("Wow!");
-    }
-
-    public double franareStanga(float acceleratie, float viraj) {
-        return Math.max(acceleratie * 0.25 - viraj, -0.25); // nu poate fi valoare mai mica de -0.25
-    }
-
-    public double franareDreapta(float acceleratie, float viraj) {
-        return Math.min(acceleratie * 0.25 + viraj, 0.25); // nu poate fi valoare mai mare de 0.25
+    public void putereAmbeleMotoare(double viteza) {
+        putereMotorDreapta(viteza);
+        putereMotorStanga(viteza);
     }
 }
