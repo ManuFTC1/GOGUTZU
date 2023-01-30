@@ -3,10 +3,6 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.robotcore.util.ReadWriteFile;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 
 @TeleOp(name="Robot: Teleop POV", group="Robot")
 public class RobotTeleopPOV_Linear extends LinearOpMode {
@@ -14,163 +10,208 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
     RobotHardware robot = new RobotHardware();
     ElapsedTime runtime = new ElapsedTime();
 
+    double acceleratieMotorDreapta = 0;
+    double acceleratieMotorStanga = 0;
+    double pozitieMaini = 0.25;
+
     @Override
     public void runOpMode() {
 
+        String modCondus = "normal";
         robot.init(hardwareMap);
+
+        telemetry.addLine("Robot PREGATIT");
+        telemetry.update();
 
         waitForStart();
 
         while (opModeIsActive()) {
-            runtime.startTime();
 
-            if(gamepad1.a) {
-                runtime.startTime();
-                while (gamepad1.a) {
-                    robot.setWheelsPower(-1);
-                }
-                try {
-                    FileWriter myWriter = new FileWriter("Control Hub v1.0\\Internal shared storage\\Download\\inputRobot.txt");
-                    myWriter.write('a' + " " + runtime + '\n');
-                    myWriter.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                robot.setWheelsPower(0);
-                telemetry.addLine("a");
-                continue;
-            }
-            if(gamepad1.y) {
-                runtime.startTime();
-                while(gamepad1.y) {
-                    robot.setWheelsPower(1);
-                }
-                try {
-                    FileWriter myWriter = new FileWriter("C:\\Users\\Claudiu\\Downloads\\FtcRobotController-8.1.1\\TeamCode\\src\\main\\java\\org\\firstinspires\\ftc\\teamcode\\inputRobot.txt");
-                    myWriter.write('y' + " " + runtime + '\n');
-                    myWriter.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                robot.setWheelsPower(0);
-                telemetry.addLine("y");
-                continue;
-            }
+            //rotile lui Sergiu
+            if (gamepad1.left_bumper)
+                modCondus = "normal";
+            if (gamepad1.right_bumper)
+                modCondus = "manual";
 
-            if(gamepad1.x) {
-                runtime.startTime();
-                while (gamepad1.x) {
-                    robot.setWheelsSpin(-1);
-                }
-                try {
-                    FileWriter myWriter = new FileWriter("C:\\Users\\Claudiu\\Downloads\\FtcRobotController-8.1.1\\TeamCode\\src\\main\\java\\org\\firstinspires\\ftc\\teamcode\\inputRobot.txt");
-                    myWriter.write('x' + " " + runtime + '\n');
-                    myWriter.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                robot.setWheelsSpin(0);
-                telemetry.addLine("x");
-                continue;
-            }
+            if (modCondus.equals("normal"))
+                modNormal();
+            else
+                modManual();
 
-            if(gamepad1.b) {
-                runtime.startTime();
-                while (gamepad1.b) {
-                    robot.setWheelsSpin(1);
-                }
-                try {
-                    FileWriter myWriter = new FileWriter("C:\\Users\\Claudiu\\Downloads\\FtcRobotController-8.1.1\\TeamCode\\src\\main\\java\\org\\firstinspires\\ftc\\teamcode\\inputRobot.txt");
-                    myWriter.write('b' + " " + runtime + '\n');
-                    myWriter.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                robot.setWheelsSpin(0);
-                telemetry.addLine("b");
-                continue;
-            }
-            telemetry.update();
+
+            //bratul lui Manu
+            robot.bratRobot.setPower(gamepad2.right_stick_y);
+
+            pozitieMaini += gamepad2.right_trigger * 0.01;
+            pozitieMaini -= gamepad2.left_trigger * 0.01;
+
+            pozitieMaini = Math.max(pozitieMaini, 0.25);//sa nu depaseaca valori de 1 sau -1
+            pozitieMaini = Math.min(pozitieMaini, 1);
+
+            if (gamepad2.right_bumper)
+                pozitieMaini = 1.0;
+            if (gamepad2.left_bumper)
+                pozitieMaini = 0.74;
+            if (gamepad2.a)
+                pozitieMaini = 0.25;
+
+            robot.setServoPosition(pozitieMaini);
+
+            //telemetry
+            telemetrieMaini();
+
+            sleep(20);//incetineste sa nu fie prea rapid
         }
         stop();
     }
+
+    public void modManual(){//joysticku stang - roata stanga, joysticku drept - roata dreapta
+        double rotireaAiurea;
+
+        rotireaAiurea = gamepad1.left_stick_x;
+
+        if(rotireaAiurea != 0) {
+            rotirePeLoc(-rotireaAiurea);
+            return;
+        }
+
+        double vitezaStanga;
+        double vitezaDrepta;
+
+
+        vitezaStanga = -gamepad1.left_stick_y;
+        vitezaDrepta = -gamepad1.right_stick_y;
+
+        if(vitezaDrepta == 0)
+            acceleratieMotorDreapta = 0;
+
+        if(vitezaStanga == 0)
+            acceleratieMotorStanga = 0;
+
+        putereMotorStanga(vitezaStanga);
+        putereMotorDreapta(vitezaDrepta);
+    }
+
+    public void modNormal() {//rt viteza, lt marsalier/frana, joystick stanga directie
+
+        double viteza;
+        double viraj;
+        double rotireAiurea;
+
+        rotireAiurea = gamepad1.right_stick_x;
+
+        if(rotireAiurea != 0 ) {
+            rotirePeLoc(-rotireAiurea);
+            return;
+        }
+        viteza = gamepad1.right_trigger - gamepad1.left_trigger;
+        viraj = gamepad1.left_stick_x;
+
+        if(viteza == 0) {
+            robot.setWheelsPower(0);
+            acceleratieMotorStanga = 0;
+            acceleratieMotorDreapta = 0;
+        }
+        else
+            if(viraj == 0)
+                putereAmbeleMotoare(viteza);
+            else {
+                if (viraj < 0) {
+                    franareDreapta(viteza, viraj);
+                    putereMotorDreapta(viteza);
+                }
+                if (viraj > 0) {
+                    franareStanga(viteza, viraj);
+                    putereMotorStanga(viteza);
+                }
+            }
+
+
+    }
+
+    public void putereMotorStanga(double viteza) {
+        if(viteza * acceleratieMotorStanga <= 0){ //daca au semne diferite
+            acceleratieMotorStanga = 0;
+        }
+        else
+            acceleratieMotorStanga += viteza / 10; //acceleratie mai rapida daca nr este mai mic
+
+        if(acceleratieMotorStanga > 1) //limiteaza acceleratia intr 1 si -1
+            acceleratieMotorStanga = 1;
+
+        if(acceleratieMotorStanga < -1)
+            acceleratieMotorStanga = -1;
+
+        if(viteza > 0)
+            robot.motorStanga.setPower(Math.min(viteza, acceleratieMotorStanga));
+        else
+            robot.motorStanga.setPower(Math.max(viteza, acceleratieMotorStanga));
+
+        telemetry.addData("Motor stanga viteza: ", viteza);
+        telemetry.addData("Motor stanga acceleratie: ", acceleratieMotorStanga);
+    }
+
+    public void putereMotorDreapta(double viteza) {
+        if(viteza * acceleratieMotorDreapta <= 0){
+            acceleratieMotorStanga = 0;
+        }
+        else
+            acceleratieMotorDreapta += viteza / 10;
+
+        if(acceleratieMotorDreapta > 1)
+            acceleratieMotorDreapta = 1;
+
+        if(acceleratieMotorDreapta < -1)
+            acceleratieMotorDreapta = -1;
+
+        if(viteza > 0)
+            robot.motorDreapta.setPower(Math.min(viteza, acceleratieMotorDreapta));
+        else
+            robot.motorDreapta.setPower(Math.max(viteza, acceleratieMotorDreapta));
+
+        telemetry.addData("Motor stanga viteza: ", viteza);
+        telemetry.addData("Motor stanga acceleratie: ", acceleratieMotorDreapta);
+    }
+
+    public void franareStanga(double viteza, double viraj) {
+        double putereFrana;
+
+        if(viteza > 0) {
+            putereFrana = viteza - viraj - 0.2;
+        }
+        else {
+            putereFrana = viteza + viraj + 0.2;
+        }
+
+        robot.motorStanga.setPower(putereFrana);
+    }
+
+    public void franareDreapta(double viteza, double viraj) {
+        double putereFrana;
+
+        if(viteza > 0) {
+            putereFrana = viteza + viraj - 0.2;
+        }
+        else {
+            putereFrana = viteza - viraj + 0.2;
+        }
+
+        robot.motorDreapta.setPower(putereFrana);
+    }
+
+    public void rotirePeLoc(double viteza) {//se roteste pe loc
+        robot.motorStanga.setPower(-viteza);
+        robot.motorDreapta.setPower(viteza);
+    }
+
+    public void putereAmbeleMotoare(double viteza) {
+        putereMotorDreapta(viteza);
+        putereMotorStanga(viteza);
+    }
+
+    public void telemetrieMaini() {
+        telemetry.addData("pozitie dreapta: ", robot.manaDreapta.getPosition());
+        telemetry.addData("pozitie stanga: ", robot.manaStanga.getPosition());
+        telemetry.update();
+    }
 }
-/*
-    double fata = 0;
-    double spate = 0;
-    double dreapta = 0;
-    double stanga = 0;
-    double timp = 0;
-
-    waitForStart();
-
-        while (opModeIsActive()) {
-                runtime.startTime();
-
-                if(gamepad1.y) {
-                runtime.startTime();
-                while(gamepad1.y) {
-                robot.setWheelsPower(1);
-                }
-                try {
-                FileWriter myWriter = new FileWriter("inputRobot.txt");
-                myWriter.write('y' + " " + runtime + '\n');
-                myWriter.close();
-                } catch (IOException e) {
-                e.printStackTrace();
-                }
-                robot.setWheelsPower(1);
-                return;
-                }
-
-                if(gamepad1.a) {
-                runtime.startTime();
-                while (gamepad1.b) {
-                robot.setWheelsPower(-1);
-                }
-                try {
-                FileWriter myWriter = new FileWriter("inputRobot.txt");
-                myWriter.write('a' + " " + runtime + '\n');
-                myWriter.close();
-                } catch (IOException e) {
-                e.printStackTrace();
-                }
-                robot.setWheelsPower(-1);
-                return;
-                }
-
-                if(gamepad1.x) {
-                runtime.startTime();
-                while (gamepad1.x) {
-
-                }
-                try {
-                FileWriter myWriter = new FileWriter("inputRobot.txt");
-                myWriter.write('x' + " " + runtime + '\n');
-                myWriter.close();
-                } catch (IOException e) {
-                e.printStackTrace();
-                }
-                robot.setWheelsSpin(-1);
-                return;
-                }
-
-                if(gamepad1.b) {
-                runtime.startTime();
-                while (gamepad1.b) {
-
-
-                }
-                try {
-                FileWriter myWriter = new FileWriter("inputRobot.txt");
-                myWriter.write('b' + " " + runtime + '\n');
-                myWriter.close();
-                } catch (IOException e) {
-                e.printStackTrace();
-                }
-                robot.setWheelsSpin(1);
-                return;
-                }
-                }
-                stop();
-                */
