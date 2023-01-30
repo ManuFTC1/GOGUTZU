@@ -135,7 +135,7 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
     }
 
     public void putereMotorStanga(double viteza) {
-        if(viteza * acceleratieMotorStanga < 0){ //daca au semne diferite
+        if(viteza * acceleratieMotorStanga < 0){ //daca au semne diferite, !!!!!poate merge cu mai mic sau egal
             acceleratieMotorStanga = 0;
         }
         else
@@ -157,7 +157,7 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
     }
 
     public void putereMotorDreapta(double viteza) {
-        if(viteza * acceleratieMotorDreapta < 0){
+        if(viteza * acceleratieMotorDreapta < 0){!!!!!! poate merge cu mai mic sau egal
             acceleratieMotorStanga = 0;
         }
         else
