@@ -69,4 +69,5 @@ public class RobotHardware {
         manaStanga.setPosition(allPosition);
         manaDreapta.setPosition(allPosition);
     }
+
 }

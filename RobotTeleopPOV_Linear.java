@@ -28,19 +28,16 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
         while (opModeIsActive()) {
 
             //rotile lui Sergiu
+            if (gamepad1.left_bumper)
+                modCondus = "normal";
+            if (gamepad1.right_bumper)
+                modCondus = "manual";
 
             if (modCondus.equals("normal"))
                 modNormal();
             else
                 modManual();
 
-            if (gamepad1.left_bumper)
-                modCondus = "normal";
-            if (gamepad1.right_bumper)
-                modCondus = "manual";
-
-            if(gamepad1.a)
-                robot.setWheelsPower(1);
 
             //bratul lui Manu
             robot.bratRobot.setPower(gamepad2.right_stick_y);
@@ -61,11 +58,8 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
             robot.setServoPosition(pozitieMaini);
 
             //telemetry
-            telemetry.addData("pozitie dreapta: ", robot.manaDreapta.getPosition());
-            telemetry.addData("pozitie stanga: ", robot.manaStanga.getPosition());
-            telemetry.update();
+            telemetrieMaini();
 
-            sleep(20);//incetineste sa nu fie prea rapid
         }
         stop();
     }
@@ -73,10 +67,15 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
     public void modManual(){//joysticku stang - roata stanga, joysticku drept - roata dreapta
         double rotireaAiurea;
 
+        if(gamepad1.right_trigger != 0) {// da un reset
+            acceleratieMotorDreapta = 0;
+            acceleratieMotorStanga = 0;
+        }
+
         rotireaAiurea = gamepad1.left_stick_x;
 
         if(rotireaAiurea != 0) {
-            rotirePeLoc(-rotireaAiurea);
+            virajRoti(0, rotireaAiurea);
             return;
         }
 
@@ -101,45 +100,40 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
 
         double viteza;
         double viraj;
-        double rotireAiurea;
 
-        rotireAiurea = gamepad1.right_stick_x;
-
-        if(rotireAiurea != 0 ) {
-           rotirePeLoc(-rotireAiurea);
-            return;
-        }
-        viteza = gamepad1.right_trigger - gamepad1.left_trigger;
         viraj = gamepad1.left_stick_x;
+
+        viteza = gamepad1.right_trigger - gamepad1.left_trigger;
 
         if(viteza == 0) {
             robot.setWheelsPower(0);
             acceleratieMotorStanga = 0;
             acceleratieMotorDreapta = 0;
-        }
-        else
-            if(viraj == 0)
-                putereAmbeleMotoare(viteza);
-            else {
-            if (viraj < 0) {
-                franareDreapta(viteza, viraj);
-                putereMotorDreapta(viteza);
-            }
-            if (viraj > 0) {
-                franareStanga(viteza, viraj);
-                putereMotorStanga(viteza);
-            }
+            return;
         }
 
 
+        if(viraj != 0 ) {
+            virajRoti(viteza, viraj);
+        }
+        else {
+            putereMotorDreapta(viteza);
+            putereMotorStanga(viteza);
+        }
     }
 
+
     public void putereMotorStanga(double viteza) {
-        if(viteza * acceleratieMotorStanga < 0){ //daca au semne diferite, !!!!!poate merge cu mai mic sau egal
+        if(viteza > 1)
+            viteza = 1;
+        if(viteza < -1)
+            viteza = -1;
+
+        if(viteza * acceleratieMotorStanga < 0){ //daca au semne diferite
             acceleratieMotorStanga = 0;
         }
-        else
-            acceleratieMotorStanga += viteza / 10; //acceleratie mai rapid daca nr este mai mic
+
+        acceleratieMotorStanga += viteza / 20; //acceleratie mai rapida daca nr este mai mic
 
         if(acceleratieMotorStanga > 1) //limiteaza acceleratia intr 1 si -1
             acceleratieMotorStanga = 1;
@@ -157,11 +151,16 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
     }
 
     public void putereMotorDreapta(double viteza) {
-        if(viteza * acceleratieMotorDreapta < 0){!!!!!! poate merge cu mai mic sau egal
-            acceleratieMotorStanga = 0;
+        if(viteza > 1)
+            viteza = 1;
+        if(viteza < -1)
+            viteza = -1;
+
+        if(viteza * acceleratieMotorDreapta <= 0){
+            acceleratieMotorDreapta = 0;
         }
-        else
-            acceleratieMotorDreapta += viteza / 10;
+
+        acceleratieMotorDreapta += viteza / 20;
 
         if(acceleratieMotorDreapta > 1)
             acceleratieMotorDreapta = 1;
@@ -174,43 +173,42 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
         else
             robot.motorDreapta.setPower(Math.max(viteza, acceleratieMotorDreapta));
 
-        telemetry.addData("Motor stanga viteza: ", viteza);
-        telemetry.addData("Motor stanga acceleratie: ", acceleratieMotorDreapta);
+        telemetry.addData("Motor dreapta viteza: ", viteza);
+        telemetry.addData("Motor dreapta acceleratie: ", acceleratieMotorDreapta);
     }
 
-    public void franareStanga(double viteza, double viraj) {
-        double putereFrana;
-        
-        if(viteza > 0) {
-            putereFrana = viteza - viraj - 0.1;
+
+    public void virajRoti(double viteza, double viraj) {//se roteste pe loc
+        if(viteza >0) {
+            if(viraj < 0) {
+                putereMotorStanga(Math.max(-0.1, viteza + viraj - 0.1));
+                putereMotorDreapta(viteza);
+            }
+            else {
+                putereMotorDreapta(Math.max(-0.1, viteza - viraj - 0.1));
+                putereMotorStanga(viteza);
+            }
         }
+
         else {
-            putereFrana = viteza + viraj + 0.1;
+            if(viraj < 0) {
+                putereMotorStanga(Math.min(0.1, viteza - viraj + 0.1));
+                putereMotorDreapta(viteza);
+            }
+            else {
+                putereMotorDreapta(Math.min(0.1, viteza + viraj + 0.1));
+                putereMotorStanga(viteza);
+            }
         }
-
-        robot.motorStanga.setPower(putereFrana);
     }
 
-    public void franareDreapta(double viteza, double viraj) {
-        double putereFrana;
 
-        if(viteza > 0) {
-            putereFrana = viteza + viraj - 0.1;
-        }
-        else {
-            putereFrana = viteza - viraj + 0.1;
-        }
 
-        robot.motorDreapta.setPower(putereFrana);
-    }
 
-    public void rotirePeLoc(double viteza) {//se roteste pe loc
-        robot.motorStanga.setPower(-viteza);
-        robot.motorDreapta.setPower(viteza);
-    }
 
-    public void putereAmbeleMotoare(double viteza) {
-        putereMotorDreapta(viteza);
-        putereMotorStanga(viteza);
+    public void telemetrieMaini() {
+        telemetry.addData("pozitie dreapta: ", robot.manaDreapta.getPosition());
+        telemetry.addData("pozitie stanga: ", robot.manaStanga.getPosition());
+        telemetry.update();
     }
 }
