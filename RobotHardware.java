@@ -29,15 +29,17 @@ public class RobotHardware {
         motorStanga.setDirection(DcMotor.Direction.FORWARD);
         motorDreapta.setDirection(DcMotor.Direction.REVERSE);
 
-        setWheelsPower(0);
-
         motorStanga.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         motorDreapta.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        setWheelsPower(0);
 
         //Brat Robot
         bratRobot = hwMap.get(DcMotor.class, "Arm");
         bratRobot.setDirection(DcMotor.Direction.FORWARD);
         bratRobot.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        bratRobot.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);//blocheaza bratu
+
         bratRobot.setPower(0);
 
         //Maini Robot
@@ -47,17 +49,23 @@ public class RobotHardware {
         manaStanga.setDirection(Servo.Direction.FORWARD);
         manaDreapta.setDirection(Servo.Direction.REVERSE);
 
-        setServoPosition(0.25);
+        manaStanga.getPosition();
 
-        while (runtime.seconds() < 0.65) {//apesi init, bratu sus, se strang mainile, bratu jos
-            bratRobot.setPower(-0.5);
+
+        //daca bratu ii deschis, se inchide in init
+        if(manaStanga.getPosition() > 0.25 || manaDreapta.getPosition() > 0.25){
+            setServoPosition(0.25);
+
+            while (runtime.seconds() < 0.65) {
+                bratRobot.setPower(-0.5);
+            }
+
+            while (runtime.seconds() < 1.3) {
+                bratRobot.setPower(0.2);
+            }
+
+            bratRobot.setPower(0);
         }
-
-        while (runtime.seconds() < 0.7) {
-            bratRobot.setPower(0.7);
-        }
-
-        bratRobot.setPower(0);
     }
 
     public void setWheelsPower(double allPower) {
@@ -70,4 +78,15 @@ public class RobotHardware {
         manaDreapta.setPosition(allPosition);
     }
 
+    public void brakeWheels(boolean x) {
+        if(x) {
+            setWheelsPower(0);
+            motorStanga.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            motorDreapta.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        }
+        else {
+            motorStanga.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+            motorDreapta.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        }
+    }
 }

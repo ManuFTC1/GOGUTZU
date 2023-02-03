@@ -2,9 +2,11 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 
-@TeleOp(name="Robot: Teleop POV", group="Robot")
+@TeleOp(name="TELE: Joc La Nivel Inalt", group="Robot")
 public class RobotTeleopPOV_Linear extends LinearOpMode {
 
     RobotHardware robot = new RobotHardware();
@@ -20,32 +22,31 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
         String modCondus = "normal";
         robot.init(hardwareMap);
 
-        telemetry.addLine("Robot PREGATIT");
-        telemetry.update();
-
         waitForStart();
 
         while (opModeIsActive()) {
 
             //rotile lui Sergiu
-            if (gamepad1.left_bumper)
+            if (gamepad1.left_bumper || gamepad1.right_bumper)
                 modCondus = "normal";
-            if (gamepad1.right_bumper)
+            if (gamepad1.left_stick_button || gamepad1.right_stick_button)
                 modCondus = "manual";
 
-            if (modCondus.equals("normal"))
-                modNormal();
-            else
-                modManual();
+            robot.brakeWheels(gamepad1.a);//pune frana daca apesi pe a
+            if(!gamepad1.a)
+                if (modCondus.equals("normal"))
+                    modNormal();
+                else
+                    modManual();
 
 
             //bratul lui Manu
             robot.bratRobot.setPower(gamepad2.right_stick_y);
 
-            pozitieMaini += gamepad2.right_trigger * 0.01;
-            pozitieMaini -= gamepad2.left_trigger * 0.01;
+            pozitieMaini += gamepad2.right_trigger * 0.07;
+            pozitieMaini -= gamepad2.left_trigger * 0.07;
 
-            pozitieMaini = Math.max(pozitieMaini, 0.25);//sa nu depaseaca valori de 1 sau -1
+            pozitieMaini = Math.max(pozitieMaini, 0.25);//nu depaseste valori de 1 sau 0.25
             pozitieMaini = Math.min(pozitieMaini, 1);
 
             if (gamepad2.right_bumper)
@@ -61,39 +62,15 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
             telemetrieMaini();
 
         }
-        stop();
+        stop();//sa fim siguri ca se opreste
     }
 
     public void modManual(){//joysticku stang - roata stanga, joysticku drept - roata dreapta
-        double rotireaAiurea;
+        robot.motorDreapta.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        robot.motorStanga.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        if(gamepad1.right_trigger != 0) {// da un reset
-            acceleratieMotorDreapta = 0;
-            acceleratieMotorStanga = 0;
-        }
-
-        rotireaAiurea = gamepad1.left_stick_x;
-
-        if(rotireaAiurea != 0) {
-            virajRoti(0, rotireaAiurea);
-            return;
-        }
-
-        double vitezaStanga;
-        double vitezaDrepta;
-
-
-        vitezaStanga = -gamepad1.left_stick_y;
-        vitezaDrepta = -gamepad1.right_stick_y;
-
-        if(vitezaDrepta == 0)
-            acceleratieMotorDreapta = 0;
-
-        if(vitezaStanga == 0)
-            acceleratieMotorStanga = 0;
-
-        putereMotorStanga(vitezaStanga);
-        putereMotorDreapta(vitezaDrepta);
+        robot.motorDreapta.setPower(-gamepad1.right_stick_y);
+        robot.motorStanga.setPower(-gamepad1.left_stick_y);
     }
 
     public void modNormal() {//rt viteza, lt marsalier/frana, joystick stanga directie
@@ -105,6 +82,8 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
 
         viteza = gamepad1.right_trigger - gamepad1.left_trigger;
 
+        robot.motorDreapta.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        robot.motorStanga.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         if(viteza == 0) {
             robot.setWheelsPower(0);
             acceleratieMotorStanga = 0;
