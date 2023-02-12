@@ -33,7 +33,7 @@ public class RobotTeleopPOV_Linear extends LinearOpMode {
             //rotile lui Sergiu
             if (gamepad1.left_trigger != 0 || gamepad1.right_trigger != 0)
                 modCondus = "normal";
-            if ((gamepad1.left_stick_y < -0.5 && gamepad1.left_stick_y > 0.50) || (gamepad1.right_stick_y < -0.5 && gamepad1.right_stick_y > 0.50) || gamepad1.right_stick_y != 0)
+            if (gamepad1.left_stick_y < -0.5 || gamepad1.left_stick_y > 0.50 || gamepad1.right_stick_y < -0.5 || gamepad1.right_stick_y > 0.50)
                 modCondus = "manual";
 
             robot.brakeWheels(gamepad1.a);//pune frana daca apesi pe a
